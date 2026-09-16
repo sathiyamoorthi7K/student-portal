@@ -18,4 +18,4 @@ Open http://localhost:5173. The API runs on http://localhost:4000 and creates `s
 
 The project can be deployed as one Vercel project. The `api/index.js` entry point exposes the Express API at `/api`, while the Vite build publishes the client. Leave `VITE_API_URL` unset so the frontend calls the same Vercel domain.
 
-Vercel's filesystem is not persistent, so SQLite data in this serverless setup can be lost between deployments or function instances. For production data, replace SQLite with a hosted database such as Neon Postgres or Vercel Postgres. Alternatively, deploy the `server` folder to a Node.js host with persistent disk storage.
+For production records, create a Neon Postgres database and add its connection string as the Vercel environment variable `DATABASE_URL`. The API uses Neon when `DATABASE_URL` is set and automatically creates the `students` table on first request. Without that variable, local development continues to use SQLite.
