@@ -6,7 +6,7 @@ import path from 'node:path'
 
 const app = express()
 const port = process.env.PORT || 4000
-const databasePath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'students.db')
+const databasePath = process.env.DB_PATH || path.join(path.dirname(fileURLToPath(import.meta.url)), 'students.db')
 const database = new Database(databasePath)
 
 database.pragma('journal_mode = WAL')
@@ -62,6 +62,10 @@ app.post('/api/students', (request, response) => {
   }
 })
 
-app.listen(port, () => {
-  console.log(`Student API running at http://localhost:${port}`)
-})
+export default app
+
+if (process.env.VERCEL !== '1') {
+  app.listen(port, () => {
+    console.log(`Student API running at http://localhost:${port}`)
+  })
+}

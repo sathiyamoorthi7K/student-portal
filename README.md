@@ -16,6 +16,6 @@ Open http://localhost:5173. The API runs on http://localhost:4000 and creates `s
 
 ## Deployment
 
-Deploy the `client` as a Vercel static site and deploy the `server` as a persistent Node.js service, such as Render or Railway. Set the Vercel environment variable `VITE_API_URL` to the public URL of the deployed API, for example `https://student-api.example.com`, then redeploy the frontend.
+The project can be deployed as one Vercel project. The `api/index.js` entry point exposes the Express API at `/api`, while the Vite build publishes the client. Leave `VITE_API_URL` unset so the frontend calls the same Vercel domain.
 
-The API uses SQLite, so its service must have persistent disk storage. Vercel's static deployment does not run `server/index.js` and therefore cannot serve `/api/students` by itself.
+Vercel's filesystem is not persistent, so SQLite data in this serverless setup can be lost between deployments or function instances. For production data, replace SQLite with a hosted database such as Neon Postgres or Vercel Postgres. Alternatively, deploy the `server` folder to a Node.js host with persistent disk storage.
