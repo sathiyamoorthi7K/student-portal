@@ -18,6 +18,7 @@ const formatDate = (value) => new Intl.DateTimeFormat('en-US', {
 }).format(new Date(`${value}T00:00:00`))
 
 const initials = (name) => name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
+const apiUrl = import.meta.env.VITE_API_URL || ''
 
 function App() {
   const [students, setStudents] = useState([])
@@ -33,7 +34,7 @@ function App() {
   useEffect(() => {
     const loadStudents = async () => {
       try {
-        const response = await fetch(`/api/students?search=${encodeURIComponent(search)}`)
+        const response = await fetch(`${apiUrl}/api/students?search=${encodeURIComponent(search)}`)
         if (!response.ok) throw new Error('Could not load students.')
         setStudents(await response.json())
       } catch (loadError) {
@@ -58,7 +59,7 @@ function App() {
     setError('')
     setMessage('')
     try {
-      const response = await fetch('/api/students', {
+      const response = await fetch(`${apiUrl}/api/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
