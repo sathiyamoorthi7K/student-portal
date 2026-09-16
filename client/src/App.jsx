@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowUpRight, Check, ChevronRight, Mail, MapPin, Phone, Plus, Search, Users, X } from 'lucide-react'
+import { ArrowUpRight, Check, ChevronRight, LogOut, Mail, MapPin, Phone, Plus, Search, Users, X } from 'lucide-react'
 
 const emptyForm = {
   fullName: '',
@@ -19,6 +19,7 @@ const formatDate = (value) => new Intl.DateTimeFormat('en-US', {
 
 const initials = (name) => name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
 const apiUrl = import.meta.env.VITE_API_URL || ''
+const emptyAuthForm = { email: '', password: '' }
 
 function App() {
   const [students, setStudents] = useState([])
@@ -30,11 +31,25 @@ function App() {
   const [isSaving, setIsSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [authUser, setAuthUser] = useState(null)
+  const [authForm, setAuthForm] = useState(emptyAuthForm)
+  const [authMode, setAuthMode] = useState('login')
+  const [isAuthLoading, setIsAuthLoading] = useState(true)
+  const [isAuthSaving, setIsAuthSaving] = useState(false)
 
   useEffect(() => {
+    fetch(`${apiUrl}/api/auth/me`, { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((user) => setAuthUser(user))
+      .catch(() => setAuthUser(null))
+      .finally(() => setIsAuthLoading(false))
+  }, [])
+
+  useEffect(() => {
+    if (!authUser) return
     const loadStudents = async () => {
       try {
-        const response = await fetch(`${apiUrl}/api/students?search=${encodeURIComponent(search)}`)
+        const response = await fetch(`${apiUrl}/api/students?search=${encodeURIComponent(search)}`, { credentials: 'include' })
         if (!response.ok) throw new Error('Could not load students.')
         setStudents(await response.json())
       } catch (loadError) {
@@ -44,13 +59,42 @@ function App() {
       }
     }
     loadStudents()
-  }, [search])
+  }, [search, authUser])
 
   const activeCount = students.length
   const courseCount = useMemo(() => new Set(students.map((student) => student.course)).size, [students])
 
   const updateField = (event) => {
     setForm({ ...form, [event.target.name]: event.target.value })
+  }
+
+  const submitAuth = async (event) => {
+    event.preventDefault()
+    setIsAuthSaving(true)
+    setError('')
+    try {
+      const endpoint = authMode === 'login' ? 'login' : 'register'
+      const response = await fetch(`${apiUrl}/api/auth/${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(authForm),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.message || 'Authentication failed.')
+      setAuthUser(result)
+      setAuthForm(emptyAuthForm)
+    } catch (authError) {
+      setError(authError.message)
+    } finally {
+      setIsAuthSaving(false)
+    }
+  }
+
+  const logout = async () => {
+    await fetch(`${apiUrl}/api/auth/logout`, { method: 'POST', credentials: 'include' })
+    setAuthUser(null)
+    setStudents([])
   }
 
   const submitForm = async (event) => {
@@ -62,6 +106,7 @@ function App() {
       const response = await fetch(`${apiUrl}/api/students`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify(form),
       })
       const result = await response.json()
@@ -77,6 +122,28 @@ function App() {
     }
   }
 
+  if (isAuthLoading) return <main className="auth-shell"><div className="auth-card"><div className="eyebrow"><span className="eyebrow-line" /> Student Ledger</div><h1>Loading your workspace.</h1></div></main>
+
+  if (!authUser) return (
+    <main className="auth-shell">
+      <div className="auth-card">
+        <div className="brand"><span className="brand-mark">SL</span><span>Student Ledger</span></div>
+        <div className="eyebrow auth-eyebrow"><span className="eyebrow-line" /> Admissions workspace</div>
+        <h1>{authMode === 'login' ? 'Welcome back.' : 'Create your workspace.'}</h1>
+        <p className="auth-copy">Sign in to manage student records securely.</p>
+        <form className="auth-form" onSubmit={submitAuth}>
+          <label>Email<input required type="email" value={authForm.email} onChange={(event) => setAuthForm({ ...authForm, email: event.target.value })} placeholder="you@example.com" /></label>
+          <label>Password<input required minLength="8" type="password" value={authForm.password} onChange={(event) => setAuthForm({ ...authForm, password: event.target.value })} placeholder="At least 8 characters" /></label>
+          {error && <div className="notice error">{error}</div>}
+          <button className="primary-button submit-button" disabled={isAuthSaving}>{isAuthSaving ? 'Please wait...' : authMode === 'login' ? 'Sign in' : 'Create account'}</button>
+        </form>
+        <button className="auth-switch" onClick={() => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError('') }}>
+          {authMode === 'login' ? 'Need an account? Create one' : 'Already have an account? Sign in'}
+        </button>
+      </div>
+    </main>
+  )
+
   return (
     <main className="app-shell">
       <div className="page-orbit page-orbit-one" />
@@ -86,7 +153,7 @@ function App() {
           <span className="brand-mark">SL</span>
           <span>Student Ledger</span>
         </a>
-        <div className="topbar-meta"><span className="live-dot" /> Admissions workspace <span className="topbar-divider" /> 2026</div>
+        <div className="topbar-meta"><span className="live-dot" /> {authUser.email} <span className="topbar-divider" /> <button className="logout-button" onClick={logout}><LogOut size={14} /> Sign out</button></div>
       </nav>
 
       <section className="hero">

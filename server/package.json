@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@neondatabase/serverless": "latest",
+    "bcryptjs": "latest",
     "better-sqlite3": "latest",
+    "cookie-parser": "latest",
     "cors": "latest",
-    "express": "latest"
+    "express": "latest",
+    "jsonwebtoken": "latest"
   }
 }
