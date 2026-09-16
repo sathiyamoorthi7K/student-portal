@@ -1,0 +1,6 @@
+node_modules/
+server/students.db
+server/students.db-shm
+server/students.db-wal
+dist/
+.DS_Store
